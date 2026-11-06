@@ -39,7 +39,7 @@ export default function Navbar() {
             <div className="flex items-center space-x-3 pl-2 border-l border-gray-200">
               <Link to="/mi-cuenta" className="text-brandNavy font-bold hover:text-brandGoldHover transition flex items-center gap-1.5">
                 <span>👤</span>
-                <span>MI CUENTA ({user.nombre.split(' ')[0]})</span>
+                <span>MI CUENTA ({(user.nombre || user.email || 'Asistente').split(' ')[0]})</span>
               </Link>
               <button onClick={logout} className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 rounded hover:bg-red-50 transition">
                 Salir

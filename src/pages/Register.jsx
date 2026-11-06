@@ -4,15 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { EVENT_DETAILS } from '../services/stripeConfig';
 
 export default function Register() {
-  const { registerAndBuy, loading } = useAuth();
+  const { user, registerAndBuy, loading } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    nombre: '',
-    apellido_paterno: '',
-    apellido_materno: '',
-    correo: '',
-    telefono: '',
+    nombre: user?.nombre || '',
+    apellido_paterno: user?.apellido_paterno || '',
+    apellido_materno: user?.apellido_materno || '',
+    correo: user?.correo || user?.email || '',
+    telefono: user?.telefono || '',
     password: '',
     cardNumber: '4242 •••• •••• 4242',
     cardExp: '12/28',
@@ -21,6 +21,7 @@ export default function Register() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,7 +31,7 @@ export default function Register() {
     e.preventDefault();
     setErrorMsg('');
 
-    if (formData.password.length < 6) {
+    if (!user && formData.password.length < 6) {
       setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
@@ -42,14 +43,18 @@ export default function Register() {
         apellido_materno: formData.apellido_materno,
         correo: formData.correo,
         telefono: formData.telefono,
-        password: formData.password
+        password: formData.password || 'TemporaryPass2026!'
       });
 
       if (res.success) {
         setSuccess(true);
-        setTimeout(() => {
-          navigate('/mi-cuenta');
-        }, 1500);
+        if (res.requiresEmailConfirmation) {
+          setRequiresConfirmation(true);
+        } else {
+          setTimeout(() => {
+            navigate('/mi-cuenta');
+          }, 1500);
+        }
       } else {
         setErrorMsg(res.error || 'Ocurrió un error al procesar el registro.');
       }
@@ -114,17 +119,38 @@ export default function Register() {
                     ✓
                   </div>
                   <h3 className="text-2xl font-bold text-brandNavy font-serif">¡Registro y Pago Exitosos!</h3>
-                  <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-                    Tu boleto con código QR ha sido generado y vinculado a tu cuenta. Te estamos redirigiendo a tu panel de boletos...
-                  </p>
-                  <div className="mt-6">
-                    <Link
-                      to="/mi-cuenta"
-                      className="inline-block bg-brandGold text-brandNavy font-bold px-6 py-2.5 rounded-lg shadow hover:bg-brandGoldHover transition text-sm"
-                    >
-                      Ver Mi Boleto Ahora →
-                    </Link>
-                  </div>
+                  {requiresConfirmation ? (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-600 max-w-md mx-auto">
+                        Tu boleto ha sido generado exitosamente. Hemos enviado un correo de confirmación de <strong>Supabase Auth</strong> a <strong>{formData.correo}</strong>.
+                      </p>
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg mt-4 max-w-md mx-auto">
+                        Por favor revisa tu bandeja de entrada (o carpeta de spam) y haz clic en el enlace para activar tu cuenta e ingresar a ver tus boletos.
+                      </p>
+                      <div className="mt-6">
+                        <Link
+                          to="/login"
+                          className="inline-block bg-brandNavy text-white font-bold px-6 py-2.5 rounded-lg shadow hover:bg-brandNavyDark transition text-sm"
+                        >
+                          Ir al Inicio de Sesión →
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
+                        Tu boleto con código QR ha sido generado y vinculado a tu cuenta de Supabase. Te estamos redirigiendo a tu panel de boletos...
+                      </p>
+                      <div className="mt-6">
+                        <Link
+                          to="/mi-cuenta"
+                          className="inline-block bg-brandGold text-brandNavy font-bold px-6 py-2.5 rounded-lg shadow hover:bg-brandGoldHover transition text-sm"
+                        >
+                          Ver Mi Boleto Ahora →
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">

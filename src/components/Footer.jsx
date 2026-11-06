@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
@@ -38,10 +39,15 @@ export default function Footer() {
           </a>
         </div>
 
-        {/* Firma */}
-        <p className="text-[10px] text-gray-500 uppercase mt-4">
-          Summit Empresarial México
-        </p>
+        {/* Firma y Acceso Admin */}
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] text-gray-500">
+          <span className="uppercase">Summit Empresarial México</span>
+          <span className="hidden sm:inline">·</span>
+          <Link to="/admin" className="text-gray-400 hover:text-brandGold transition font-semibold flex items-center gap-1">
+            <span>⚙️</span>
+            <span>Panel de Administración</span>
+          </Link>
+        </div>
       </div>
     </footer>
   );

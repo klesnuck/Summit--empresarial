@@ -12,20 +12,17 @@ export default function MyTickets() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    if (!user) return;
 
     const loadTickets = async () => {
       setLoading(true);
-      const data = await SummitAPI.getUserTickets(user.correo);
-      setTickets(data);
+      const data = await SummitAPI.getUserTickets(user.correo || user.email);
+      setTickets(data || []);
       setLoading(false);
     };
 
     loadTickets();
-  }, [user, navigate]);
+  }, [user]);
 
   if (!user) return null;
 
@@ -78,7 +75,7 @@ export default function MyTickets() {
         ) : (
           <div className="space-y-10">
             {tickets.map((boleto) => {
-              const validationUrl = `${window.location.origin}/validar/${encodeURIComponent(boleto.codigo_boleto)}`;
+              const ticketUrl = `${window.location.origin}/boleto/${encodeURIComponent(boleto.codigo_boleto)}`;
 
               return (
                 <div
@@ -127,7 +124,7 @@ export default function MyTickets() {
                     <div className="py-2 flex flex-col items-center justify-center">
                       <div className="p-3 bg-white border-2 border-brandNavy rounded-2xl shadow-md inline-block">
                         <QRCodeSVG
-                          value={validationUrl}
+                          value={ticketUrl}
                           size={180}
                           level="H"
                           fgColor="#0A1931"

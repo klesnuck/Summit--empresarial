@@ -1,31 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { user, login, loading } = useAuth();
+  const { user, login, resetPassword, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Ruta a la que se dirigirá al iniciar sesión (la ruta que intentaba acceder o /mi-cuenta)
+  const from = location.state?.from?.pathname || '/mi-cuenta';
 
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [codigoBoleto, setCodigoBoleto] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      navigate('/mi-cuenta');
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
 
     const res = await login(correo, password);
     if (res.success) {
-      navigate('/mi-cuenta');
+      navigate(from, { replace: true });
     } else {
       setErrorMsg(res.error || 'Credenciales incorrectas.');
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+
+    setForgotLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const res = await resetPassword(forgotEmail);
+    setForgotLoading(false);
+
+    if (res.success) {
+      setSuccessMsg(res.message || 'Se ha enviado un correo con instrucciones para restablecer tu contraseña.');
+      setShowForgotModal(false);
+    } else {
+      setErrorMsg(res.error || 'No se pudo enviar el correo de recuperación.');
     }
   };
 
@@ -46,7 +74,7 @@ export default function Login() {
           Iniciar Sesión
         </h1>
         <p className="text-sm md:text-base text-gray-300 max-w-xl mx-auto mt-4 leading-relaxed">
-          Ingresa a tu cuenta para visualizar, descargar o imprimir tus boletos de acceso.
+          Ingresa a tu cuenta con Supabase Auth para visualizar, descargar o imprimir tus boletos de acceso.
         </p>
       </section>
 
@@ -59,13 +87,19 @@ export default function Login() {
             </div>
             <h2 className="text-xl font-bold text-brandNavy font-serif">Bienvenido Asistente</h2>
             <p className="text-xs text-gray-500 mt-1">
-              Accede con el correo y contraseña que registraste al comprar tu boleto.
+              Accede con tu correo electrónico y tu contraseña registrada.
             </p>
           </div>
 
+          {successMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg mb-4 text-center">
+              ✓ {successMsg}
+            </div>
+          )}
+
           {errorMsg && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg mb-4 text-center">
-              {errorMsg}
+              ⚠️ {errorMsg}
             </div>
           )}
 
@@ -85,9 +119,21 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase text-gray-600 mb-1">
-                Contraseña
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold uppercase text-gray-600">
+                  Contraseña
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(correo);
+                    setShowForgotModal(true);
+                  }}
+                  className="text-[11px] text-brandGold font-semibold hover:underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
               <input
                 type="password"
                 required
@@ -103,13 +149,60 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-brandNavy text-white font-bold py-3.5 rounded-lg shadow-lg hover:bg-brandNavyDark transition flex justify-center items-center gap-2 text-sm mt-2 disabled:opacity-75"
             >
-              {loading ? 'Verificando...' : 'Entrar a Mi Cuenta'}
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Verificando...</span>
+                </>
+              ) : (
+                'Entrar a Mi Cuenta'
+              )}
             </button>
           </form>
 
+          {/* Modal / Desplegable de Recuperación de Contraseña */}
+          {showForgotModal && (
+            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+              <h3 className="text-xs font-bold text-brandNavy mb-1">Restablecer Contraseña</h3>
+              <p className="text-[11px] text-gray-500 mb-3">
+                Te enviaremos un correo con un enlace para cambiar tu contraseña en Supabase.
+              </p>
+              <form onSubmit={handleForgotPassword} className="space-y-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="tu@empresa.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brandGold"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="bg-brandGold text-brandNavy font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-brandGoldHover transition disabled:opacity-50"
+                  >
+                    {forgotLoading ? 'Enviando...' : 'Enviar Enlace'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-semibold">O consulta directa</span></div>
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-400 font-semibold">O consulta directa</span>
+            </div>
           </div>
 
           {/* Búsqueda rápida por código */}
@@ -145,4 +238,3 @@ export default function Login() {
     </div>
   );
 }
-

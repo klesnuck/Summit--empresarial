@@ -20,7 +20,7 @@ export default function TicketView() {
     fetchTicket();
   }, [codigo]);
 
-  const validationUrl = `${window.location.origin}/validar/${encodeURIComponent(codigo || '')}`;
+  const ticketUrl = `${window.location.origin}/boleto/${encodeURIComponent(codigo || '')}`;
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center justify-center">
@@ -84,7 +84,7 @@ export default function TicketView() {
           <div className="flex justify-center my-5">
             <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
               <QRCodeSVG
-                value={validationUrl}
+                value={ticketUrl}
                 size={180}
                 level="H"
                 fgColor="#0A1931"
