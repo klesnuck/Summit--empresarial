@@ -227,11 +227,20 @@ export default function Login() {
             </div>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-gray-500">
-            ¿Aún no tienes boleto?
-            <Link to="/registro" className="text-brandGold font-bold hover:underline ml-1">
-              Comprar Boleto Aquí →
-            </Link>
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-gray-500 space-y-3">
+            <div>
+              ¿Aún no tienes boleto?
+              <Link to="/registro" className="text-brandGold font-bold hover:underline ml-1">
+                Comprar Boleto Aquí →
+              </Link>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100/80 text-gray-500">
+              ¿Eres organizador?{' '}
+              <Link to="/admin" className="text-brandNavy font-bold hover:text-brandGold transition hover:underline">
+                Inicia sesión aquí →
+              </Link>
+            </div>
           </div>
         </div>
       </main>
