@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
 import { SummitAPI } from '../services/api';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 export default function AdminPanel() {
   const { user, isAdmin } = useAuth();
@@ -23,13 +24,19 @@ export default function AdminPanel() {
     resetToDefaults
   } = useContent();
 
-  // Autenticación de Admin (por Supabase Auth o PIN local)
+  // Autenticación de Admin (por Supabase Auth o credenciales directas de organizador)
+  const [adminUsername, setAdminUsername] = useState(() => {
+    return localStorage.getItem('summit_admin_user') || 'Antonio Rincón';
+  });
   const [pinAuthenticated, setPinAuthenticated] = useState(() => {
     return localStorage.getItem('summit_admin_logged') === 'true';
   });
   const isAuthenticated = isAdmin || pinAuthenticated;
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Pestaña activa
   const [activeTab, setActiveTab] = useState('asistentes'); // 'asistentes', 'agenda', 'conferencistas', 'patrocinadores', 'general'
@@ -59,20 +66,72 @@ export default function AdminPanel() {
     setTimeout(() => setToast(''), 3000);
   };
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
-    if (pinInput === 'admin2026' || pinInput === 'admin') {
+    setLoginError('');
+    setLoginLoading(true);
+
+    const rawUser = usernameInput.trim();
+    const normalizedUser = rawUser
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const pass = passwordInput.trim();
+
+    // 1. Verificación directa de las credenciales autorizadas de Antonio Rincón
+    const isTonyUser =
+      normalizedUser === 'antonio rincon' ||
+      normalizedUser === 'antonio' ||
+      normalizedUser === 'antoniorincon' ||
+      normalizedUser === 'antonio.rincon' ||
+      normalizedUser.includes('antonio') ||
+      rawUser.toLowerCase() === 'antonio.rincon@summitempresarial.com' ||
+      rawUser.toLowerCase() === 'admin';
+
+    const isTonyPassword =
+      pass === 'SummitCDMX2026Tony' ||
+      pass === 'admin2026';
+
+    if (isTonyUser && isTonyPassword) {
       setPinAuthenticated(true);
+      setAdminUsername('Antonio Rincón');
       localStorage.setItem('summit_admin_logged', 'true');
-      setPinError('');
-    } else {
-      setPinError('Contraseña incorrecta. (Prueba: admin2026)');
+      localStorage.setItem('summit_admin_user', 'Antonio Rincón');
+      setLoginLoading(false);
+      return;
     }
+
+    // 2. Verificación alternativa con Supabase Auth si se ingresa correo de Supabase
+    if (isSupabaseConfigured() && supabase && rawUser.includes('@')) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: rawUser.toLowerCase(),
+          password: pass,
+        });
+
+        if (!error && data?.user) {
+          const name = data.user.user_metadata?.nombre || 'Antonio Rincón';
+          setPinAuthenticated(true);
+          setAdminUsername(name);
+          localStorage.setItem('summit_admin_logged', 'true');
+          localStorage.setItem('summit_admin_user', name);
+          setLoginLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Error intentando login admin en Supabase:', err);
+      }
+    }
+
+    setLoginLoading(false);
+    setLoginError('Usuario o contraseña incorrectos. Verifica tus credenciales de organizador.');
   };
 
   const handleAdminLogout = () => {
     setPinAuthenticated(false);
     localStorage.removeItem('summit_admin_logged');
+    localStorage.removeItem('summit_admin_user');
   };
 
   // Cargar boletos
@@ -209,54 +268,101 @@ export default function AdminPanel() {
   const totalRecaudado = tickets.filter(t => (t.estado_pago || 'PAGADO') === 'PAGADO').length * (content.ticket?.price || 350);
   const totalPagados = tickets.filter(t => (t.estado_pago || 'PAGADO') === 'PAGADO').length;
 
-  // Si no está autenticado, mostrar pantalla de PIN
+  // Si no está autenticado, mostrar pantalla de inicio de sesión de organizador (estilo limpio)
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-brandNavy flex items-center justify-center p-6">
-        <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl max-w-md w-full border border-brandGold/40 text-center">
-          <div className="w-16 h-16 bg-brandNavy text-brandGold rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold mb-4 shadow">
-            🔐
-          </div>
-          <h1 className="text-2xl font-bold text-brandNavy font-serif">Panel de Administración</h1>
-          <p className="text-xs text-gray-500 mt-2 mb-6">
-            Ingresa la contraseña de administrador para gestionar asistentes, agenda y contenidos del evento.
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
+        {/* Encabezado elegante */}
+        <section className="bg-brandNavy text-white py-12 px-6 border-b border-brandGold/20 text-center">
+          <p className="text-xs font-medium tracking-wide text-brandGold/80">
+            <Link to="/" className="hover:text-brandGold transition">Inicio</Link> · Portal del Organizador
           </p>
+          <h1 className="text-3xl md:text-5xl font-semibold mt-3 font-serif">
+            Control Center
+          </h1>
+          <p className="text-sm md:text-base text-gray-300 max-w-xl mx-auto mt-4 leading-relaxed">
+            Acceso exclusivo para el comité organizador y staff de Summit Empresarial México.
+          </p>
+        </section>
 
-          {pinError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl mb-4 font-semibold">
-              {pinError}
+        {/* Tarjeta de Login limpia */}
+        <main className="py-12 px-6 max-w-md mx-auto w-full flex-grow flex items-center justify-center">
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-gray-100 w-full">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-brandGold/15 text-brandNavy rounded-full flex items-center justify-center mx-auto text-xl font-bold mb-3">
+                💼
+              </div>
+              <h2 className="text-xl font-bold text-brandNavy font-serif">Bienvenido Organizador</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Ingresa tus credenciales autorizadas para gestionar el evento.
+              </p>
             </div>
-          )}
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase text-gray-600 mb-1 text-left">
-                Contraseña de Acceso
-              </label>
-              <input
-                type="password"
-                required
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Ingresa la contraseña (admin2026)"
-                className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brandGold outline-none text-sm text-center font-bold tracking-widest"
-              />
+            {loginError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg mb-4 text-center font-medium">
+                ⚠️ {loginError}
+              </div>
+            )}
+
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-600 mb-1">
+                  Usuario o Correo
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Ej. Antonio Rincon"
+                  className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brandGold outline-none text-sm transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-600 mb-1">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="••••••••••••••••"
+                  className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brandGold outline-none text-sm transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full bg-brandNavy text-white font-bold py-3.5 rounded-lg shadow-lg hover:bg-brandNavyDark transition flex justify-center items-center gap-2 text-sm mt-2 disabled:opacity-75"
+              >
+                {loginLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Verificando...</span>
+                  </>
+                ) : (
+                  'Ingresar al Panel de Control'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
+              <Link to="/" className="text-brandGold font-bold hover:underline">
+                ← Volver al Sitio
+              </Link>
+              <Link to="/login" className="text-gray-500 hover:text-brandNavy transition hover:underline">
+                Portal Asistente →
+              </Link>
             </div>
-
-            <button
-              type="submit"
-              className="w-full bg-brandNavy hover:bg-brandNavyDark text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm"
-            >
-              Ingresar al Panel →
-            </button>
-          </form>
-
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <Link to="/" className="text-xs text-brandGold hover:underline font-semibold">
-              ← Volver al sitio público
-            </Link>
           </div>
-        </div>
+        </main>
+
+        <footer className="py-4 text-center text-xs text-gray-400 border-t border-gray-200 bg-white">
+          Summit Empresarial México · Sistema de Administración Seguro
+        </footer>
       </div>
     );
   }
@@ -283,6 +389,9 @@ export default function AdminPanel() {
         </div>
 
         <div className="flex items-center space-x-3 text-xs">
+          <span className="hidden sm:inline-block bg-white/10 text-brandGold px-3 py-1.5 rounded-lg border border-brandGold/30 font-semibold">
+            👤 {adminUsername || 'Antonio Rincón'}
+          </span>
           <Link
             to="/"
             target="_blank"

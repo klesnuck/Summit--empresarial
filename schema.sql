@@ -188,3 +188,26 @@ grant select, insert, update on public.usuarios to authenticated;
 grant select, insert on public.usuarios to anon;
 grant select, insert, update, delete on public.boletos to authenticated;
 grant select, insert, update on public.boletos to anon;
+
+-- =====================================================
+-- USUARIO ADMINISTRADOR PRINCIPAL (Antonio Rincón)
+-- =====================================================
+insert into public.usuarios (
+    nombre,
+    apellido_paterno,
+    correo,
+    telefono,
+    rol
+)
+values (
+    'Antonio',
+    'Rincón',
+    'antonio.rincon@summitempresarial.com',
+    '5500000000',
+    'admin'
+)
+on conflict (correo) do update set
+    rol = 'admin',
+    nombre = 'Antonio',
+    apellido_paterno = 'Rincón';
+
