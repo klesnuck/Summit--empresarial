@@ -26,7 +26,7 @@ export default function AdminPanel() {
 
   // Autenticación de Admin (por Supabase Auth o credenciales directas de organizador)
   const [adminUsername, setAdminUsername] = useState(() => {
-    return localStorage.getItem('summit_admin_user') || 'Antonio Rincón';
+    return localStorage.getItem('summit_admin_user') || 'Administrador';
   });
   const [pinAuthenticated, setPinAuthenticated] = useState(() => {
     return localStorage.getItem('summit_admin_logged') === 'true';
@@ -314,7 +314,7 @@ export default function AdminPanel() {
                   required
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
-                  placeholder="Ej. Antonio Rincon"
+                  placeholder="Usuario o correo"
                   className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brandGold outline-none text-sm transition"
                 />
               </div>
@@ -328,7 +328,7 @@ export default function AdminPanel() {
                   required
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="••••••••••••••••"
+                  placeholder="Contraseña"
                   className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-brandGold outline-none text-sm transition"
                 />
               </div>
@@ -390,7 +390,7 @@ export default function AdminPanel() {
 
         <div className="flex items-center space-x-3 text-xs">
           <span className="hidden sm:inline-block bg-white/10 text-brandGold px-3 py-1.5 rounded-lg border border-brandGold/30 font-semibold">
-            👤 {adminUsername || 'Antonio Rincón'}
+            👤 {adminUsername || 'Administrador'}
           </span>
           <Link
             to="/"
