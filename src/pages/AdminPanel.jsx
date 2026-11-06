@@ -431,10 +431,6 @@ export default function AdminPanel() {
       <section className="bg-brandNavy text-white py-8 px-6 border-b border-brandGold/30 relative">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 bg-brandGold/20 border border-brandGold/40 px-3 py-1 rounded-full text-brandGold text-[11px] font-bold uppercase tracking-wider mb-2">
-              <span>🛡️</span>
-              <span>Módulo de Control y Operación</span>
-            </div>
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-white">
               Panel de Control del Evento
             </h1>
