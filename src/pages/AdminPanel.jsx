@@ -438,16 +438,6 @@ export default function AdminPanel() {
               Gestión en tiempo real de asistentes registrados, pagos de boletos, agenda y contenidos de Summit Empresarial México.
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to="/registro"
-              target="_blank"
-              className="bg-brandGold hover:bg-brandGoldHover text-brandNavy font-bold px-4 py-2.5 rounded-xl shadow-md text-xs transition transform hover:-translate-y-0.5"
-            >
-              + Simular Venta / Boleto
-            </Link>
-          </div>
         </div>
       </section>
 
